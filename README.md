@@ -5,23 +5,29 @@ GWT Gradle Plugin
 Release notes
 -------------
 
+* 1.2.1: Fix - with envClassPath true classpath entries are now split at
+  semicolons
+
+---------
+
+*
 * 1.2.0: Compatibility with new Gradle versions
-	* Minimum Gradle version 7.x
-	* Gradle 8.5 build
-	* Minimum Java 11 for building
+    * Minimum Gradle version 7.x
+    * Gradle 8.5 build
+    * Minimum Java 11 for building
 
 ---------
 
 * 1.1.1: minor changes
 * 1.1.0: New features and optimizations:
-	* Java executions now use Gradle standard call Project.javaexec() to address
-	  classpath handling issues.
-	* New configuration property `envClasspath` can be set to true to place the
-	  execution classpath into the CLASSPATH environment variable instead of a
-	  command line parameter. This should fix Windows errors if the command line
-	  size exceeds 32K.
-	* Gradle API updated to version 5. Should still be compatible with Gradle 4,
-	  please report otherwise.
+    * Java executions now use Gradle standard call Project.javaexec() to address
+      classpath handling issues.
+    * New configuration property `envClasspath` can be set to true to place the
+      execution classpath into the CLASSPATH environment variable instead of a
+      command line parameter. This should fix Windows errors if the command line
+      size exceeds 32K.
+    * Gradle API updated to version 5. Should still be compatible with Gradle 4,
+      please report otherwise.
 
 ---------
 
@@ -55,9 +61,8 @@ abandoned [project by Steffen Schaefer](https://github.com/steffenschaefer/gwt-g
 ## Usage ##
 
 Apply the plugin **de.esoco.gwt** (or **de.esoco.gwt-lib** for library
-projects). To apply the plugin, add the appropriate snippet to
-the `build.gradle` files of
-your projects:
+projects). To apply the plugin, add the appropriate snippet to the
+`build.gradle` files of your projects:
 
 **Gradle >= 2.1**
 
@@ -303,11 +308,13 @@ gwt {
 }
 ```
 
-##### `gwtDev` - Compile the GWT web application and run it in development mode on Jetty
+#####
+
+`gwtDev` - Compile the GWT web application and run it in development mode on
+Jetty
 
 The development mode (also called *Super Dev Mode* in GWT) can be controlled
-with
-the `dev` configuration:
+with the `dev` configuration:
 
 ```groovy
 gwt {
