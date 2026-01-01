@@ -59,12 +59,21 @@ public class CompileCommand extends AbstractCommand {
 
 		Collection<File> deps = getDependencySourceDirs(project);
 
-		for (File sourceDir : deps) {
-			addClassPath(sourceDir.getAbsolutePath());
-		}
+        for (File sourceDir : deps) {
+            addClassPath(sourceDir.getAbsolutePath());
+        }
 
-		addClassPath(compileConf.getAsPath());
-		addClassPath(sdmConf.getAsPath());
+        if (compilerOptions.isEnvClasspath()) {
+            for (String path : compileConf.getAsPath().split(";")) {
+                addClassPath(path);
+            }
+            for (String path : sdmConf.getAsPath().split(";")) {
+                addClassPath(path);
+            }
+        } else {
+            addClassPath(compileConf.getAsPath());
+            addClassPath(sdmConf.getAsPath());
+        }
 
 		addArg("-war", war);
 		addArg("-extra", compilerOptions.getExtra());
