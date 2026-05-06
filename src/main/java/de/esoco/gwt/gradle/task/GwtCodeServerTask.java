@@ -25,13 +25,18 @@ import de.esoco.gwt.gradle.util.ResourceUtils;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 
 public class GwtCodeServerTask extends AbstractTask {
 
 	public static final String NAME = "gwtCodeServer";
 
-	public GwtCodeServerTask() {
+	@Inject
+	public GwtCodeServerTask(ExecOperations execOperations) {
+		super(execOperations);
 
 		setDescription("Run CodeServer in SuperDevMode");
 
@@ -61,7 +66,7 @@ public class GwtCodeServerTask extends AbstractTask {
 		ResourceUtils.ensureDir(extension.getDev().getLauncherDir());
 
 		AbstractCommand command =
-		    new CodeServerCommand(getProject(), extension,
+		    new CodeServerCommand(getProject(), getExecOperations(), extension,
 		                          extension.getModule());
 
 		command.execute();

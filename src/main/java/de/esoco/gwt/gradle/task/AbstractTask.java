@@ -17,10 +17,21 @@ package de.esoco.gwt.gradle.task;
 import de.esoco.gwt.gradle.extension.GwtExtension;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 public abstract class AbstractTask extends DefaultTask {
 
-	public AbstractTask() {
+	private final ExecOperations execOperations;
+
+	@Inject
+	public AbstractTask(ExecOperations execOperations) {
+		this.execOperations = execOperations;
 		setGroup(GwtExtension.NAME);
+	}
+
+	protected ExecOperations getExecOperations() {
+		return execOperations;
 	}
 }

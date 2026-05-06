@@ -17,11 +17,9 @@ package de.esoco.gwt.gradle.extension;
 import java.util.Arrays;
 import java.util.List;
 
-import org.gradle.util.ConfigureUtil;
+import org.gradle.api.Action;
 
 import com.google.common.collect.Lists;
-
-import groovy.lang.Closure;
 
 public class GwtExtension {
 	
@@ -95,8 +93,8 @@ public class GwtExtension {
 		this.dev = dev;
 	}
 
-	public GwtExtension dev(Closure<DevOption> c) {
-		ConfigureUtil.configure(c, dev);
+	public GwtExtension dev(Action<DevOption> action) {
+		action.execute(dev);
 		return this;
 	}
 
@@ -108,8 +106,8 @@ public class GwtExtension {
 		this.compile = compile;
 	}
 
-	public GwtExtension compile(Closure<CompilerOption> c) {
-		ConfigureUtil.configure(c, compile);
+	public GwtExtension compile(Action<CompilerOption> action) {
+		action.execute(compile);
 		return this;
 	}
 
@@ -121,8 +119,8 @@ public class GwtExtension {
 		this.jetty = jetty;
 	}
 
-	public GwtExtension jetty(Closure<JettyOption> c) {
-		ConfigureUtil.configure(c, jetty);
+	public GwtExtension jetty(Action<JettyOption> action) {
+		action.execute(jetty);
 		return this;
 	}
 

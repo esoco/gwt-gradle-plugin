@@ -21,12 +21,17 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 public class GwtStopTask extends AbstractTask {
 
 	public static final String NAME = "gwtStop";
 
-	public GwtStopTask() {
+	@Inject
+	public GwtStopTask(ExecOperations execOperations) {
+		super(execOperations);
 		setDescription("Stop jetty");
 	}
 

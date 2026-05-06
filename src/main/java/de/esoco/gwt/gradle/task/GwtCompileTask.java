@@ -39,11 +39,15 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
 import org.jetbrains.annotations.NotNull;
+
+import javax.inject.Inject;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,7 +64,9 @@ public class GwtCompileTask extends AbstractTask {
 
 	private FileCollection src;
 
-	public GwtCompileTask() {
+	@Inject
+	public GwtCompileTask(ExecOperations execOperations) {
+		super(execOperations);
 
 		setDescription("Compile the GWT modules");
 
@@ -127,7 +133,7 @@ public class GwtCompileTask extends AbstractTask {
 		}
 
 		CompileCommand command =
-			new CompileCommand(project, compilerOptions, getSrc(), getWar(),
+			new CompileCommand(project, getExecOperations(), compilerOptions, getSrc(), getWar(),
 				getModules());
 
 		command.execute();
@@ -180,7 +186,7 @@ public class GwtCompileTask extends AbstractTask {
 					mainSourceSet.getCompileClasspathConfigurationName());
 			for (Dependency dep : config.getAllDependencies()) {
 				if (dep instanceof ProjectDependency) {
-					addSources(((ProjectDependency) dep).getDependencyProject(),
+					addSources(getProject().project(((ProjectDependency) dep).getPath()),
 						sources, allProjects);
 				}
 			}
@@ -188,7 +194,6 @@ public class GwtCompileTask extends AbstractTask {
 		}
 	}
 
-	@SuppressWarnings("UnstableApiUsage")
 	private void addSources(Project project,
 		final ConfigurableFileCollection sources,
 		final Set<Project> allProjects) {
@@ -226,12 +231,12 @@ public class GwtCompileTask extends AbstractTask {
 		OperatingSystemMXBean osMBean =
 			ManagementFactory.getOperatingSystemMXBean();
 
-		if (osMBean instanceof com.sun.management.OperatingSystemMXBean) {
-			com.sun.management.OperatingSystemMXBean sunOsMBean =
-				(com.sun.management.OperatingSystemMXBean) osMBean;
+		try {
+			Method m = osMBean.getClass().getMethod("getFreePhysicalMemorySize");
+			m.setAccessible(true);
+			long freeMemory = (long) m.invoke(osMBean);
 			long memPerWorker = 1024L * 1024L * options.getLocalWorkersMem();
-			long nbFreeMemInGb =
-				sunOsMBean.getFreePhysicalMemorySize() / memPerWorker;
+			long nbFreeMemInGb = freeMemory / memPerWorker;
 
 			if (nbFreeMemInGb < workers) {
 				workers = nbFreeMemInGb;
@@ -240,6 +245,8 @@ public class GwtCompileTask extends AbstractTask {
 			if (workers < 1) {
 				workers = 1;
 			}
+		} catch (Exception e) {
+			// fallback: keep workers = availableProcessors
 		}
 
 		return (int) workers;

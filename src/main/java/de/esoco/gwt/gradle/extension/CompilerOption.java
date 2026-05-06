@@ -305,7 +305,7 @@ public class CompilerOption extends JavaOption {
 	public void init(Project project) {
 
 		final File buildDir =
-		    new File(project.getBuildDir(), GwtExtension.DIRECTORY);
+		    new File(project.getLayout().getBuildDirectory().getAsFile().get(), GwtExtension.DIRECTORY);
 
 		this.war              = new File(buildDir, "out");
 		this.workDir          = new File(buildDir, "work");
