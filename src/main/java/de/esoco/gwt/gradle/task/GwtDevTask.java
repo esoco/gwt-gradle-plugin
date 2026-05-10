@@ -1,30 +1,30 @@
 /**
  * This file is part of gwt-gradle-plugin.
- *
- * gwt-gradle-plugin is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
- * General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * gwt-gradle-plugin is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
- * General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with gwt-gradle-plugin. If not,
- * see <http://www.gnu.org/licenses/>.
+ * <p>
+ * gwt-gradle-plugin is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ * <p>
+ * gwt-gradle-plugin is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ * <p>
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with gwt-gradle-plugin. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.esoco.gwt.gradle.task;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-
-import de.esoco.gwt.gradle.command.CodeServerCommand;
 import de.esoco.gwt.gradle.command.AbstractCommand;
+import de.esoco.gwt.gradle.command.CodeServerCommand;
 import de.esoco.gwt.gradle.command.JettyServerCommand;
 import de.esoco.gwt.gradle.extension.DevOption;
 import de.esoco.gwt.gradle.extension.GwtExtension;
 import de.esoco.gwt.gradle.util.ResourceUtils;
-
 import org.gradle.api.Project;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
@@ -35,173 +35,171 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.War;
 import org.gradle.process.ExecOperations;
+import org.gradle.work.DisableCachingByDefault;
 
 import javax.inject.Inject;
-
 import java.io.File;
 import java.io.IOException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-
+@DisableCachingByDefault(because = "Produces no artifacts")
 public class GwtDevTask extends AbstractTask {
 
-	public static final String NAME = "gwtDev";
+    public static final String NAME = "gwtDev";
 
-	private final List<String> modules   = Lists.newArrayList();
-	private File               jettyConf;
+    private final List<String> modules = Lists.newArrayList();
 
-	@Inject
-	public GwtDevTask(ExecOperations execOperations) {
-		super(execOperations);
+    private File jettyConf;
 
-		setDescription("Run DevMode");
+    @Inject
+    public GwtDevTask(ExecOperations execOperations) {
+        super(execOperations);
 
-		dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
-		          JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
-	}
+        setDescription("Run DevMode");
 
-	public void configureCodeServer(final Project project,
-	                                final GwtExtension extention) {
+        dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
+            JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+    }
 
-		final DevOption options = extention.getDev();
+    public void configureCodeServer(final Project project,
+        final GwtExtension extention) {
 
-		options.init(project);
+        final DevOption options = extention.getDev();
 
-		ConventionMapping convention =
-		    ((IConventionAware) this).getConventionMapping();
+        options.init(project);
 
-		convention.map("modules", new Callable<List<String>>() {
+        ConventionMapping convention =
+            ((IConventionAware) this).getConventionMapping();
 
-		                   @Override
-		                   public List<String> call() {
+        convention.map("modules", new Callable<List<String>>() {
 
-		                       return extention.getModule();
-		                   }
-		               });
-	}
+            @Override
+            public List<String> call() {
 
-	@TaskAction
-	public void exec() throws Exception {
+                return extention.getModule();
+            }
+        });
+    }
 
-		GwtExtension extension =
-		    getProject().getExtensions().getByType(GwtExtension.class);
-		DevOption    sdmOption = extension.getDev();
+    @TaskAction
+    public void exec() throws Exception {
 
-		createWarExploded(sdmOption);
-		ResourceUtils.ensureDir(sdmOption.getWar());
-		ResourceUtils.ensureDir(sdmOption.getWorkDir());
-		jettyConf =
-		    new File(getProject().getLayout().getBuildDirectory().getAsFile().get(),
-		             GwtExtension.DIRECTORY +
-		             "/conf/jetty-run-conf.xml");
+        GwtExtension extension =
+            getProject().getExtensions().getByType(GwtExtension.class);
+        DevOption sdmOption = extension.getDev();
 
-		Map<String, String> model =
-		    new ImmutableMap.Builder<String, String>().put("__WAR_FILE__",
-		                                                   sdmOption.getWar()
-		                                                   .getAbsolutePath())
-		                                              .build();
+        createWarExploded(sdmOption);
+        ResourceUtils.ensureDir(sdmOption.getWar());
+        ResourceUtils.ensureDir(sdmOption.getWorkDir());
+        jettyConf = new File(
+            getProject().getLayout().getBuildDirectory().getAsFile().get(),
+            GwtExtension.DIRECTORY + "/conf/jetty-run-conf.xml");
 
-		ResourceUtils.copy("/stub.jetty-conf.xml", jettyConf, model);
+        Map<String, String> model = new ImmutableMap.Builder<String, String>()
+            .put("__WAR_FILE__", sdmOption.getWar().getAbsolutePath())
+            .build();
 
-		Future<?> sdmTask = execSdm();
+        ResourceUtils.copy("/stub.jetty-conf.xml", jettyConf, model);
 
-		if (!sdmTask.isDone()) {
-			execJetty();
-			sdmTask.cancel(true);
-		}
-	}
+        Future<?> sdmTask = execSdm();
 
-	@Input
-	public List<String> getModules() {
+        if (!sdmTask.isDone()) {
+            execJetty();
+            sdmTask.cancel(true);
+        }
+    }
 
-		return modules;
-	}
+    @Input
+    public List<String> getModules() {
 
-	private void createWarExploded(DevOption sdmOption) throws IOException {
+        return modules;
+    }
 
-		War                  warTask        =
-		    (War) getProject().getTasks().getByName("war");
-		JavaPluginExtension  javaExtension  =
-		    getProject().getExtensions().getByType(JavaPluginExtension.class);
+    private void createWarExploded(DevOption sdmOption) throws IOException {
 
-		File warDir = sdmOption.getWar();
+        War warTask = (War) getProject().getTasks().getByName("war");
+        JavaPluginExtension javaExtension =
+            getProject().getExtensions().getByType(JavaPluginExtension.class);
 
-		ResourceUtils.copyDirectory(warTask.getWebAppDirectory().getAsFile().get(), warDir);
+        File warDir = sdmOption.getWar();
 
-		if (Boolean.TRUE.equals(sdmOption.getNoServer())) {
-			File webInfDir =
-			    ResourceUtils.ensureDir(new File(warDir, "WEB-INF"));
+        ResourceUtils.copyDirectory(
+            warTask.getWebAppDirectory().getAsFile().get(), warDir);
 
-			ResourceUtils.deleteDirectory(webInfDir);
-		} else {
-			SourceSet mainSourceSet =
-			    javaExtension.getSourceSets().getByName("main");
-			File      classesDir    =
-			    ResourceUtils.ensureDir(new File(warDir, "WEB-INF/classes"));
+        if (Boolean.TRUE.equals(sdmOption.getNoServer())) {
+            File webInfDir =
+                ResourceUtils.ensureDir(new File(warDir, "WEB-INF"));
 
-			for (File file : mainSourceSet.getResources().getSrcDirs()) {
-				ResourceUtils.copyDirectory(file, classesDir);
-			}
+            ResourceUtils.deleteDirectory(webInfDir);
+        } else {
+            SourceSet mainSourceSet =
+                javaExtension.getSourceSets().getByName("main");
+            File classesDir =
+                ResourceUtils.ensureDir(new File(warDir, "WEB-INF/classes"));
 
-			for (File f : mainSourceSet.getOutput().getClassesDirs()) {
-				ResourceUtils.copyDirectory(f, classesDir);
-			}
+            for (File file : mainSourceSet.getResources().getSrcDirs()) {
+                ResourceUtils.copyDirectory(file, classesDir);
+            }
 
-			for (File file : mainSourceSet.getOutput().getFiles()) {
-				if (file.exists() && file.isFile()) {
-					ResourceUtils.copy(file,
-					                   new File(classesDir, file.getName()));
-				}
-			}
+            for (File f : mainSourceSet.getOutput().getClassesDirs()) {
+                ResourceUtils.copyDirectory(f, classesDir);
+            }
 
-			File libDir =
-			    ResourceUtils.ensureDir(new File(warDir, "WEB-INF/lib"));
+            for (File file : mainSourceSet.getOutput().getFiles()) {
+                if (file.exists() && file.isFile()) {
+                    ResourceUtils.copy(file,
+                        new File(classesDir, file.getName()));
+                }
+            }
 
-			for (File file : mainSourceSet.getRuntimeClasspath()) {
-				if (file.exists() && file.isFile()) {
-					ResourceUtils.copy(file, new File(libDir, file.getName()));
-				}
-			}
-		}
-	}
+            File libDir =
+                ResourceUtils.ensureDir(new File(warDir, "WEB-INF/lib"));
 
-	private JettyServerCommand execJetty() {
+            for (File file : mainSourceSet.getRuntimeClasspath()) {
+                if (file.exists() && file.isFile()) {
+                    ResourceUtils.copy(file, new File(libDir, file.getName()));
+                }
+            }
+        }
+    }
 
-		GwtExtension extension =
-		    getProject().getExtensions().getByType(GwtExtension.class);
+    private JettyServerCommand execJetty() {
 
-		JettyServerCommand command =
-		    new JettyServerCommand(getProject(), getExecOperations(), extension.getJetty(),
-		                           jettyConf);
+        GwtExtension extension =
+            getProject().getExtensions().getByType(GwtExtension.class);
 
-		command.execute();
-		return command;
-	}
+        JettyServerCommand command =
+            new JettyServerCommand(getProject(), getExecOperations(),
+                extension.getJetty(), jettyConf);
 
-	private Future<?> execSdm() {
+        command.execute();
+        return command;
+    }
 
-		GwtExtension extension =
-		    getProject().getExtensions().getByType(GwtExtension.class);
+    private Future<?> execSdm() {
 
-		DevOption devOption = extension.getDev();
+        GwtExtension extension =
+            getProject().getExtensions().getByType(GwtExtension.class);
 
-		if (!Strings.isNullOrEmpty(extension.getSourceLevel()) &&
-		    Strings.isNullOrEmpty(devOption.getSourceLevel())) {
-			devOption.setSourceLevel(extension.getSourceLevel());
-		}
+        DevOption devOption = extension.getDev();
 
-		AbstractCommand command =
-		    new CodeServerCommand(getProject(), getExecOperations(), extension, getModules());
+        if (!Strings.isNullOrEmpty(extension.getSourceLevel()) &&
+            Strings.isNullOrEmpty(devOption.getSourceLevel())) {
+            devOption.setSourceLevel(extension.getSourceLevel());
+        }
 
-		FutureTask<?> sdmTask = new FutureTask<>(() -> command.execute(), null);
+        AbstractCommand command =
+            new CodeServerCommand(getProject(), getExecOperations(), extension,
+                getModules());
 
-		new Thread(sdmTask).start();
+        FutureTask<?> sdmTask = new FutureTask<>(() -> command.execute(), null);
 
-		return sdmTask;
-	}
+        new Thread(sdmTask).start();
+
+        return sdmTask;
+    }
 }
