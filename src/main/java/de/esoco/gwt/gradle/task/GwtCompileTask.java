@@ -43,11 +43,8 @@ import org.gradle.process.ExecOperations;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -56,199 +53,185 @@ import java.util.concurrent.Callable;
 @CacheableTask
 public class GwtCompileTask extends AbstractTask {
 
-	public static final String NAME = "gwtCompile";
+    public static final String NAME = "gwtCompile";
 
-	private List<String> modules;
+    private List<String> modules;
 
-	private File war;
+    private File war;
 
-	private FileCollection src;
+    private FileCollection src;
 
-	@Inject
-	public GwtCompileTask(ExecOperations execOperations) {
-		super(execOperations);
+    @Inject
+    public GwtCompileTask(ExecOperations execOperations) {
+        super(execOperations);
 
-		setDescription("Compile the GWT modules");
+        setDescription("Compile the GWT modules");
 
-		dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
-			JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
-	}
+        dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
+            JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+    }
 
-	public void configure(final Project project,
-		final GwtExtension extension) {
+    public void configure(final Project project, final GwtExtension extension) {
 
-		final CompilerOption options = extension.getCompile();
+        final CompilerOption options = extension.getCompile();
 
-		options.init(project);
-		options.setLocalWorkers(evalWorkers(options));
+        options.init(project);
+        options.setLocalWorkers(evalWorkers(options));
 
-		final ConfigurableFileCollection sources = project.files();
-		Set<Project> allProjects = new HashSet<>();
+        final ConfigurableFileCollection sources = project.files();
+        Set<Project> allProjects = new HashSet<>();
 
-		addSources(project, sources, allProjects);
+        addSources(project, sources, allProjects);
 
-		ConventionMapping mapping =
-			((IConventionAware) this).getConventionMapping();
+        ConventionMapping mapping =
+            ((IConventionAware) this).getConventionMapping();
 
-		mapping.map("modules", new Callable<List<String>>() {
+        mapping.map("modules", new Callable<List<String>>() {
 
-			@Override
-			public List<String> call() {
+            @Override
+            public List<String> call() {
 
-				return extension.getModule();
-			}
-		});
-		mapping.map("war", new Callable<File>() {
+                return extension.getModule();
+            }
+        });
+        mapping.map("war", new Callable<File>() {
 
-			@Override
-			public File call() {
+            @Override
+            public File call() {
 
-				return options.getWar();
-			}
-		});
-		mapping.map("src", new Callable<FileCollection>() {
+                return options.getWar();
+            }
+        });
+        mapping.map("src", new Callable<FileCollection>() {
 
-			@Override
-			public FileCollection call() {
+            @Override
+            public FileCollection call() {
 
-				return sources;
-			}
-		});
-	}
+                return sources;
+            }
+        });
+    }
 
-	@TaskAction
-	public void exec() {
+    @TaskAction
+    public void exec() {
 
-		Project project = getProject();
+        Project project = getProject();
 
-		GwtExtension extension =
-			project.getExtensions().getByType(GwtExtension.class);
+        GwtExtension extension =
+            project.getExtensions().getByType(GwtExtension.class);
 
-		CompilerOption compilerOptions = extension.getCompile();
+        CompilerOption compilerOptions = extension.getCompile();
 
-		if (!Strings.isNullOrEmpty(
-			extension.getSourceLevel()) && Strings.isNullOrEmpty(
-			compilerOptions.getSourceLevel())) {
-			compilerOptions.setSourceLevel(extension.getSourceLevel());
-		}
+        if (!Strings.isNullOrEmpty(extension.getSourceLevel()) &&
+            Strings.isNullOrEmpty(compilerOptions.getSourceLevel())) {
+            compilerOptions.setSourceLevel(extension.getSourceLevel());
+        }
 
-		CompileCommand command =
-			new CompileCommand(project, getExecOperations(), compilerOptions, getSrc(), getWar(),
-				getModules());
+        CompileCommand command =
+            new CompileCommand(project, getExecOperations(), compilerOptions,
+                getSrc(), getWar(), getModules());
 
-		command.execute();
+        command.execute();
 
-		project.getTasks().getByName(GwtCheckTask.NAME).setEnabled(false);
-	}
+        project.getTasks().getByName(GwtCheckTask.NAME).setEnabled(false);
+    }
 
-	@Input
-	public List<String> getModules() {
+    @Input
+    public List<String> getModules() {
 
-		return modules;
-	}
+        return modules;
+    }
 
-	@InputFiles
-	@PathSensitive(PathSensitivity.RELATIVE)
-	public FileCollection getSrc() {
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public FileCollection getSrc() {
 
-		return src;
-	}
+        return src;
+    }
 
-	@OutputDirectory
-	public File getWar() {
+    @OutputDirectory
+    public File getWar() {
 
-		return war;
-	}
+        return war;
+    }
 
-	private void addSourceSet(ConfigurableFileCollection sources,
-		Project project, final Set<Project> allProjects, String sourceSet) {
+    private void addSourceSet(ConfigurableFileCollection sources,
+        Project project, final Set<Project> allProjects, String sourceSet) {
 
-		JavaPluginExtension java =
-			project.getExtensions().findByType(JavaPluginExtension.class);
+        JavaPluginExtension java =
+            project.getExtensions().findByType(JavaPluginExtension.class);
 
-		if (java != null) {
-			project
-				.getLogger()
-				.info(
-					"Adding {}.sourceSets.main.output and sourceSets.main" +
-						".allSource.srcDirs to {}",
-					project.getPath(), getPath());
-			SourceSet mainSourceSet =
-				java.getSourceSets().getByName(sourceSet);
-			sources.from(project.files(
-				       mainSourceSet.getOutput())) // this _should_ include
-			       // proper task dependencies, but it does not...
-			       .from(project.files(
-				       mainSourceSet.getAllSource().getSrcDirs()));
-			final Configuration config = project
-				.getConfigurations()
-				.getByName(
-					mainSourceSet.getCompileClasspathConfigurationName());
-			for (Dependency dep : config.getAllDependencies()) {
-				if (dep instanceof ProjectDependency) {
-					addSources(getProject().project(((ProjectDependency) dep).getPath()),
-						sources, allProjects);
-				}
-			}
+        if (java != null) {
+            project
+                .getLogger()
+                .info("Adding {}.sourceSets.main.output and sourceSets.main" +
+                    ".allSource.srcDirs to {}", project.getPath(), getPath());
+            SourceSet mainSourceSet = java.getSourceSets().getByName(sourceSet);
+            sources.from(project.files(
+                    mainSourceSet.getOutput())) // this _should_ include
+                // proper task dependencies, but it does not...
+                .from(project.files(mainSourceSet.getAllSource().getSrcDirs()));
+            final Configuration config = project
+                .getConfigurations()
+                .getByName(
+                    mainSourceSet.getCompileClasspathConfigurationName());
+            for (Dependency dep : config.getAllDependencies()) {
+                if (dep instanceof ProjectDependency) {
+                    addSources(getProject().project(
+                            ((ProjectDependency) dep).getPath()), sources,
+                        allProjects);
+                }
+            }
 
-		}
-	}
+        }
+    }
 
-	private void addSources(Project project,
-		final ConfigurableFileCollection sources,
-		final Set<Project> allProjects) {
+    private void addSources(Project project,
+        final ConfigurableFileCollection sources,
+        final Set<Project> allProjects) {
 
-		if (allProjects.add(project)) {
-			// wait until the project is fully evaluated before attempting to
-			// read the sourceset,
-			// in case user modifies it.
-			// TODO: use Provider<> instead of afterEvaluate.
-			//  This requires only-newer versions of gradle, so we'll leave
-			//  this in for now,
-			//  and consider using Provider in a future release, to have a
-			//  window for users of old gradle versions.
-			final Action<? super Project> includeSourceAction =
-				new Action<Project>() {
+        if (allProjects.add(project)) {
+            // wait until the project is fully evaluated before attempting to
+            // read the sourceset, in case user modifies it.
+            // TODO: use Provider<> instead of afterEvaluate.
+            //  This requires only-newer versions of gradle, so we'll leave
+            //  this in for now,  and consider using Provider in a future
+            //  release, to have a window for users of old gradle versions.
+            final Action<? super Project> includeSourceAction =
+                new Action<Project>() {
 
-					@Override
-					public void execute(@NotNull Project project) {
-						addSourceSet(sources, project, allProjects,
-							SourceSet.MAIN_SOURCE_SET_NAME);
-					}
-				};
+                    @Override
+                    public void execute(@NotNull Project project) {
+                        addSourceSet(sources, project, allProjects,
+                            SourceSet.MAIN_SOURCE_SET_NAME);
+                    }
+                };
 
-			if (project.getState().getExecuted()) {
-				includeSourceAction.execute(project);
-			} else {
-				project.afterEvaluate(includeSourceAction);
-			}
-		}
-	}
+            if (project.getState().getExecuted()) {
+                includeSourceAction.execute(project);
+            } else {
+                project.afterEvaluate(includeSourceAction);
+            }
+        }
+    }
 
-	private int evalWorkers(CompilerOption options) {
+    private int evalWorkers(CompilerOption options) {
 
-		long workers = Runtime.getRuntime().availableProcessors();
-		OperatingSystemMXBean osMBean =
-			ManagementFactory.getOperatingSystemMXBean();
+        var desiredWorkers = Runtime.getRuntime().availableProcessors();
+        var availableWorkers = 1;
 
-		try {
-			Method m = osMBean.getClass().getMethod("getFreePhysicalMemorySize");
-			m.setAccessible(true);
-			long freeMemory = (long) m.invoke(osMBean);
-			long memPerWorker = 1024L * 1024L * options.getLocalWorkersMem();
-			long nbFreeMemInGb = freeMemory / memPerWorker;
+        try {
+            var osMBean = ManagementFactory.getOperatingSystemMXBean();
+            var freeMemory = (long) osMBean
+                .getClass()
+                .getMethod("getFreeMemorySize")
+                .invoke(osMBean);
+            availableWorkers = (int) (freeMemory /
+                (1024L * 1024L * options.getLocalWorkersMem()));
+        } catch (Exception e) {
+            // fallback: keep workers = availableProcessors
+        }
 
-			if (nbFreeMemInGb < workers) {
-				workers = nbFreeMemInGb;
-			}
-
-			if (workers < 1) {
-				workers = 1;
-			}
-		} catch (Exception e) {
-			// fallback: keep workers = availableProcessors
-		}
-
-		return (int) workers;
-	}
+        return Math.max(Math.min(availableWorkers, desiredWorkers), 1);
+    }
 }

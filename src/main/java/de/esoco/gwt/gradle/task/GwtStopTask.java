@@ -44,12 +44,13 @@ public class GwtStopTask extends AbstractTask {
         JettyOption jettyOption = extension.getJetty();
 
         getLogger().info("Stopping jetty");
-        Socket soket = new Socket("localhost", jettyOption.getStopPort());
-        soket.setSoLinger(false, 0);
-        OutputStream out = soket.getOutputStream();
-        out.write((jettyOption.getStopKey() + "\r\nstop\r\n").getBytes());
-        out.flush();
-        soket.close();
+        try (Socket socket = new Socket("localhost",
+            jettyOption.getStopPort())) {
+            socket.setSoLinger(false, 0);
+            OutputStream out = socket.getOutputStream();
+            out.write((jettyOption.getStopKey() + "\r\nstop\r\n").getBytes());
+            out.flush();
+        }
     }
 
 }

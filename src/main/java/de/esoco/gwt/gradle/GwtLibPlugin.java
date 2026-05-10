@@ -32,6 +32,8 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.EclipseProject;
 
+import java.nio.file.Paths;
+
 public class GwtLibPlugin implements Plugin<Project> {
     static public final String CONF_GWT_SDK = "gwtSdk";
 
@@ -61,6 +63,9 @@ public class GwtLibPlugin implements Plugin<Project> {
         ConfigurationContainer configurationContainer =
             project.getConfigurations();
 
+        configurationContainer.create(CONF_GWT_SDK);
+        configurationContainer.create(CONF_JETTY);
+
         includeSourcesToJar(project);
 
         project.afterEvaluate(p -> initDependencies(project, extension));
@@ -84,12 +89,20 @@ public class GwtLibPlugin implements Plugin<Project> {
             .plus(testSourset.getRuntimeClasspath());
         testSourset.setRuntimeClasspath(testClasspath);
 
-        Test test = project.getTasks().withType(Test.class).getByName("test");
-        test
+        var file = project
+            .getLayout()
+            .getBuildDirectory()
+            .getAsFile()
+            .get()
+            .toString();
+
+        project
+            .getTasks()
+            .withType(Test.class)
+            .getByName("test")
             .getSystemProperties()
             .put("gwt.persistentunitcachedir",
-                project.getLayout().getBuildDirectory().getAsFile().get() +
-                    GwtExtension.DIRECTORY + "/test");
+                Paths.get(file, GwtExtension.DIRECTORY, "test").toString());
     }
 
     private void includeSourcesToJar(Project project) {

@@ -18,13 +18,13 @@ package de.esoco.gwt.gradle.task;
 
 import de.esoco.gwt.gradle.extension.GwtExtension;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.process.ExecOperations;
 
 import javax.inject.Inject;
 
-@CacheableTask
+@UntrackedTask(because = "Abstract base, but Gradle requires annotation")
 public abstract class AbstractTask extends DefaultTask {
 
     private final ExecOperations execOperations;
