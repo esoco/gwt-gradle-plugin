@@ -29,11 +29,14 @@ import org.gradle.api.Project;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.plugins.WarPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.bundling.War;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,7 +55,9 @@ public class GwtDevTask extends AbstractTask {
 	private final List<String> modules   = Lists.newArrayList();
 	private File               jettyConf;
 
-	public GwtDevTask() {
+	@Inject
+	public GwtDevTask(ExecOperations execOperations) {
+		super(execOperations);
 
 		setDescription("Run DevMode");
 
@@ -91,7 +96,7 @@ public class GwtDevTask extends AbstractTask {
 		ResourceUtils.ensureDir(sdmOption.getWar());
 		ResourceUtils.ensureDir(sdmOption.getWorkDir());
 		jettyConf =
-		    new File(getProject().getBuildDir(),
+		    new File(getProject().getLayout().getBuildDirectory().getAsFile().get(),
 		             GwtExtension.DIRECTORY +
 		             "/conf/jetty-run-conf.xml");
 
@@ -119,14 +124,14 @@ public class GwtDevTask extends AbstractTask {
 
 	private void createWarExploded(DevOption sdmOption) throws IOException {
 
-		WarPluginConvention  warConvention  =
-		    getProject().getConvention().getPlugin(WarPluginConvention.class);
-		JavaPluginConvention javaConvention =
-		    getProject().getConvention().getPlugin(JavaPluginConvention.class);
+		War                  warTask        =
+		    (War) getProject().getTasks().getByName("war");
+		JavaPluginExtension  javaExtension  =
+		    getProject().getExtensions().getByType(JavaPluginExtension.class);
 
 		File warDir = sdmOption.getWar();
 
-		ResourceUtils.copyDirectory(warConvention.getWebAppDir(), warDir);
+		ResourceUtils.copyDirectory(warTask.getWebAppDirectory().getAsFile().get(), warDir);
 
 		if (Boolean.TRUE.equals(sdmOption.getNoServer())) {
 			File webInfDir =
@@ -135,7 +140,7 @@ public class GwtDevTask extends AbstractTask {
 			ResourceUtils.deleteDirectory(webInfDir);
 		} else {
 			SourceSet mainSourceSet =
-			    javaConvention.getSourceSets().getByName("main");
+			    javaExtension.getSourceSets().getByName("main");
 			File      classesDir    =
 			    ResourceUtils.ensureDir(new File(warDir, "WEB-INF/classes"));
 
@@ -171,7 +176,7 @@ public class GwtDevTask extends AbstractTask {
 		    getProject().getExtensions().getByType(GwtExtension.class);
 
 		JettyServerCommand command =
-		    new JettyServerCommand(getProject(), extension.getJetty(),
+		    new JettyServerCommand(getProject(), getExecOperations(), extension.getJetty(),
 		                           jettyConf);
 
 		command.execute();
@@ -191,7 +196,7 @@ public class GwtDevTask extends AbstractTask {
 		}
 
 		AbstractCommand command =
-		    new CodeServerCommand(getProject(), extension, getModules());
+		    new CodeServerCommand(getProject(), getExecOperations(), extension, getModules());
 
 		FutureTask<?> sdmTask = new FutureTask<>(() -> command.execute(), null);
 

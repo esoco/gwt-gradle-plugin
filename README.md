@@ -5,6 +5,13 @@ GWT Gradle Plugin
 Release notes
 -------------
 
+* 1.3.0: Compatibility with Gradle versions 9.x
+    * Minimum Gradle version 8.x
+    * Gradle 8.14.4 build
+    * Minimum Java 17 for building
+
+---------
+
 * 1.2.1: Fix - with envClassPath true classpath entries are now split at
   semicolons
 

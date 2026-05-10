@@ -24,6 +24,9 @@ import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 import java.io.File;
 import java.util.List;
@@ -37,7 +40,9 @@ public class GwtSetUpTask extends AbstractTask {
 	@Input
 	private List<String> modules;
 
-	public GwtSetUpTask() {
+	@Inject
+	public GwtSetUpTask(ExecOperations execOperations) {
+		super(execOperations);
 		setDescription("Set up the GWT project from a skeleton");
 	}
 

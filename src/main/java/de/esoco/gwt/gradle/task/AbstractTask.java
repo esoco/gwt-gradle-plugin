@@ -14,13 +14,26 @@
  */
 package de.esoco.gwt.gradle.task;
 
-import de.esoco.gwt.gradle.extension.GwtExtension;
+import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Internal;
+import org.gradle.process.ExecOperations;
+
+import de.esoco.gwt.gradle.extension.GwtExtension;
 
 public abstract class AbstractTask extends DefaultTask {
 
-	public AbstractTask() {
+	private final ExecOperations execOperations;
+
+	@Inject
+	protected AbstractTask(ExecOperations execOperations) {
+		this.execOperations = execOperations;
 		setGroup(GwtExtension.NAME);
+	}
+
+	@Internal
+	protected ExecOperations getExecOperations() {
+		return execOperations;
 	}
 }

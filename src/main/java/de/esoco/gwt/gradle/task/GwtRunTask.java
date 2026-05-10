@@ -23,6 +23,9 @@ import de.esoco.gwt.gradle.util.ResourceUtils;
 import org.gradle.api.plugins.WarPlugin;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.bundling.War;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 import java.io.File;
 
@@ -35,7 +38,9 @@ public class GwtRunTask extends AbstractTask {
 
 	private File jettyConf;
 
-	public GwtRunTask() {
+	@Inject
+	public GwtRunTask(ExecOperations execOperations) {
+		super(execOperations);
 
 		setDescription("Run jetty with the GW the GWT modules");
 
@@ -48,12 +53,14 @@ public class GwtRunTask extends AbstractTask {
 		War warTask = (War) getProject().getTasks().getByName("war");
 
 		jettyConf =
-		    new File(getProject().getBuildDir(), "gwt/conf/jetty-run-conf.xml");
+		    new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "gwt/conf/jetty-run-conf.xml");
 
 		Map<String, String> model =
 		    new ImmutableMap.Builder<String, String>().put("__WAR_FILE__",
 		                                                   warTask
-		                                                   .getArchivePath()
+		                                                   .getArchiveFile()
+		                                                   .get()
+		                                                   .getAsFile()
 		                                                   .getAbsolutePath())
 		                                              .build();
 
@@ -63,7 +70,7 @@ public class GwtRunTask extends AbstractTask {
 		    getProject().getExtensions().getByType(GwtExtension.class);
 
 		JettyServerCommand command =
-		    new JettyServerCommand(getProject(), extension.getJetty(),
+		    new JettyServerCommand(getProject(), getExecOperations(), extension.getJetty(),
 		                           jettyConf);
 
 		command.execute();

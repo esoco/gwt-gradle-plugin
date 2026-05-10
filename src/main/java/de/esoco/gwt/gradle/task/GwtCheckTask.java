@@ -23,12 +23,15 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+
+import javax.inject.Inject;
 
 import java.io.File;
 
@@ -44,7 +47,9 @@ public class GwtCheckTask extends AbstractTask {
 	private FileCollection src;
 	private File           war;
 
-	public GwtCheckTask() {
+	@Inject
+	public GwtCheckTask(ExecOperations execOperations) {
+		super(execOperations);
 
 		setDescription("Check the GWT modules");
 
@@ -58,10 +63,10 @@ public class GwtCheckTask extends AbstractTask {
 
 		options.init(getProject());
 
-		JavaPluginConvention javaConvention =
-		    project.getConvention().getPlugin(JavaPluginConvention.class);
-		SourceSet            mainSourceSet  =
-		    javaConvention.getSourceSets()
+		JavaPluginExtension javaExtension =
+		    project.getExtensions().getByType(JavaPluginExtension.class);
+		SourceSet           mainSourceSet =
+		    javaExtension.getSourceSets()
 		                  .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 		final FileCollection sources        =
 		    getProject().files(project.files(mainSourceSet.getOutput()
@@ -87,7 +92,7 @@ public class GwtCheckTask extends AbstractTask {
 		                @Override
 		                public File call() {
 
-		                    return new File(getProject().getBuildDir(), "out");
+		                    return new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "out");
 		                }
 		            });
 		mapping.map("src", new Callable<FileCollection>() {
@@ -108,7 +113,7 @@ public class GwtCheckTask extends AbstractTask {
 		CompilerOption compilerOptions = extension.getCompile();
 
 		CompileCommand command =
-		    new CompileCommand(getProject(), compilerOptions, getSrc(), null,
+		    new CompileCommand(getProject(), getExecOperations(), compilerOptions, getSrc(), null,
 		                       getModules());
 
 		command.addArg("-validateOnly");

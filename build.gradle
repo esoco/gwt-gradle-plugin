@@ -2,7 +2,7 @@ plugins {
     id "java-library"
     id "java-gradle-plugin"
     id "com.gradle.plugin-publish" version "2.0.0"
-    id "pl.allegro.tech.build.axion-release" version "1.16.1"
+    id "pl.allegro.tech.build.axion-release" version "1.21.1"
     id "com.vanniktech.maven.publish" version "0.26.0"
 }
 
@@ -27,16 +27,16 @@ dependencies {
 }
 
 processResources {
-    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 publishing {
     publications {
         pluginPublication(MavenPublication) {
             from components.java
-            groupId project.group
-            artifactId project.name
-            version project.version
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
         }
     }
 }

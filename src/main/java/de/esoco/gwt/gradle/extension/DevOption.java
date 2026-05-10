@@ -265,7 +265,7 @@ public class DevOption extends JavaOption {
 	}
 
 	public void init(Project project) {
-		final File buildDir = new File(project.getBuildDir(), GwtExtension.DIRECTORY);
+		final File buildDir = new File(project.getLayout().getBuildDirectory().getAsFile().get(), GwtExtension.DIRECTORY);
 
 		this.war = new File(buildDir, "warDev");
 		this.workDir = new File(buildDir, "work");
