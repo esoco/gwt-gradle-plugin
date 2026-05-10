@@ -29,8 +29,9 @@ import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
 import org.gradle.process.JavaExecSpec;
 
@@ -51,11 +52,14 @@ public abstract class AbstractCommand {
 
 	private final String mainClass;
 
+	private final ExecOperations execOperations;
+
 	private JavaOption javaOptions;
 
-	public AbstractCommand(Project project, String mainClass) {
+	public AbstractCommand(Project project, ExecOperations execOperations, String mainClass) {
 
 		this.project = project;
+		this.execOperations = execOperations;
 		this.mainClass = mainClass;
 
 		javaArgs.add("-Dfile.encoding=" + Charset.defaultCharset().name());
@@ -162,7 +166,7 @@ public abstract class AbstractCommand {
 
 	public void execute() {
 
-		ExecResult execResult = project.javaexec(new Action<JavaExecSpec>() {
+		ExecResult execResult = execOperations.javaexec(new Action<JavaExecSpec>() {
 
 			@Override
 			public void execute(JavaExecSpec spec) {
@@ -202,15 +206,15 @@ public abstract class AbstractCommand {
 		for (Dependency dep : depSet) {
 			if (dep instanceof ProjectDependency) {
 				Project projectDependency =
-					((ProjectDependency) dep).getDependencyProject();
+					project.project(((ProjectDependency) dep).getPath());
 
 				if (projectDependency
 					.getPlugins()
 					.hasPlugin(GwtLibPlugin.class)) {
-					JavaPluginConvention javaConvention = projectDependency
-						.getConvention()
-						.getPlugin(JavaPluginConvention.class);
-					SourceSet mainSourceSet = javaConvention
+					JavaPluginExtension javaExtension = projectDependency
+						.getExtensions()
+						.getByType(JavaPluginExtension.class);
+					SourceSet mainSourceSet = javaExtension
 						.getSourceSets()
 						.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 

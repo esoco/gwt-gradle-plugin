@@ -22,16 +22,18 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.WarPlugin;
+import org.gradle.process.ExecOperations;
 
 import java.io.File;
 
 
 public class JettyServerCommand extends AbstractCommand {
 
-	public JettyServerCommand(Project project, JettyOption jettyOption,
+	public JettyServerCommand(Project project, ExecOperations execOperations,
+	                          JettyOption jettyOption,
 	                          File jettyConf) {
 
-		super(project, "org.eclipse.jetty.runner.Runner");
+		super(project, execOperations, "org.eclipse.jetty.runner.Runner");
 
 		configure(project, jettyOption, jettyConf);
 	}

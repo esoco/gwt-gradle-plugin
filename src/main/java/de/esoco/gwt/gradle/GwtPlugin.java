@@ -71,11 +71,11 @@ public class GwtPlugin implements Plugin<Project> {
 	// }
 
 	private void createStopTask(Project project) {
-		project.getTasks().create(GwtStopTask.NAME, GwtStopTask.class);
+		project.getTasks().register(GwtStopTask.NAME, GwtStopTask.class);
 	}
 
 	private void createCheckTask(final Project project) {
-		project.getTasks().create(GwtCheckTask.NAME, GwtCheckTask.class);
+		project.getTasks().register(GwtCheckTask.NAME, GwtCheckTask.class);
 		final GwtExtension extension = project.getExtensions().getByType(GwtExtension.class);
 		final Task checkTask = project.getTasks().getByName(JavaBasePlugin.CHECK_TASK_NAME);
 		checkTask.dependsOn(GwtCheckTask.NAME);
@@ -88,7 +88,7 @@ public class GwtPlugin implements Plugin<Project> {
 	}
 
 	private void createCompileTask(final Project project) {
-		project.getTasks().create(GwtCompileTask.NAME, GwtCompileTask.class);
+		project.getTasks().register(GwtCompileTask.NAME, GwtCompileTask.class);
 		final GwtExtension extension = project.getExtensions().getByType(GwtExtension.class);
 		final War warTask = project.getTasks().withType(War.class).getByName("war");
 		warTask.dependsOn(GwtCompileTask.NAME);
@@ -102,11 +102,11 @@ public class GwtPlugin implements Plugin<Project> {
 	}
 
 	private void createRunTask(final Project project) {
-		project.getTasks().create(GwtRunTask.NAME, GwtRunTask.class);
+		project.getTasks().register(GwtRunTask.NAME, GwtRunTask.class);
 	}
 
 	private void createCodeServerTask(final Project project) {
-		project.getTasks().create(GwtCodeServerTask.NAME, GwtCodeServerTask.class);
+		project.getTasks().register(GwtCodeServerTask.NAME, GwtCodeServerTask.class);
 		final GwtExtension extension = project.getExtensions().getByType(GwtExtension.class);
 		project.getTasks().withType(GwtCodeServerTask.class, new Action<GwtCodeServerTask>() {
 			@Override
@@ -118,7 +118,7 @@ public class GwtPlugin implements Plugin<Project> {
 	}
 
 	private void createDevTask(final Project project) {
-		project.getTasks().create(GwtDevTask.NAME, GwtDevTask.class);
+		project.getTasks().register(GwtDevTask.NAME, GwtDevTask.class);
 		final GwtExtension extension = project.getExtensions().getByType(GwtExtension.class);
 		project.getTasks().withType(GwtDevTask.class, new Action<GwtDevTask>() {
 			@Override

@@ -23,8 +23,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.process.ExecOperations;
 
 import java.io.File;
 
@@ -33,10 +34,11 @@ import java.util.Collection;
 
 public class CodeServerCommand extends AbstractCommand {
 
-	public CodeServerCommand(Project project, GwtExtension extension,
+	public CodeServerCommand(Project project, ExecOperations execOperations,
+	                         GwtExtension extension,
 	                         Collection<String> modules) {
 
-		super(project, "com.google.gwt.dev.codeserver.CodeServer");
+		super(project, execOperations, "com.google.gwt.dev.codeserver.CodeServer");
 
 		configure(project, extension, modules);
 	}
@@ -55,7 +57,7 @@ public class CodeServerCommand extends AbstractCommand {
 		    configs.getByName(GwtLibPlugin.CONF_GWT_SDK);
 
 		SourceSet      mainSourceSet =
-		    project.getConvention().getPlugin(JavaPluginConvention.class)
+		    project.getExtensions().getByType(JavaPluginExtension.class)
 		           .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 		FileCollection sources       =
 		    project.files(mainSourceSet.getAllJava().getSrcDirs());

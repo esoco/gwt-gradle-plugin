@@ -1,16 +1,18 @@
 /**
  * This file is part of gwt-gradle-plugin.
- *
- * gwt-gradle-plugin is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
- * General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * gwt-gradle-plugin is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
- * General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with gwt-gradle-plugin. If not,
- * see <http://www.gnu.org/licenses/>.
+ * <p>
+ * gwt-gradle-plugin is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ * <p>
+ * gwt-gradle-plugin is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ * <p>
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with gwt-gradle-plugin. If not, see <http://www.gnu.org/licenses/>.
  */
 package de.esoco.gwt.gradle.task;
 
@@ -23,113 +25,125 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+import org.gradle.work.DisableCachingByDefault;
+
+import javax.inject.Inject;
 
 import java.io.File;
 
 import java.util.List;
 import java.util.concurrent.Callable;
 
-
+@DisableCachingByDefault(because = "Produces no artifacts")
 public class GwtCheckTask extends AbstractTask {
 
-	public static final String NAME = "gwtCheck";
+    public static final String NAME = "gwtCheck";
 
-	private List<String>   modules;
-	private FileCollection src;
-	private File           war;
+    private List<String> modules;
 
-	public GwtCheckTask() {
+    private FileCollection src;
 
-		setDescription("Check the GWT modules");
+    private File war;
 
-		dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
-		          JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
-	}
+    @Inject
+    public GwtCheckTask(ExecOperations execOperations) {
+        super(execOperations);
 
-	public void configure(final Project project, final GwtExtension extention) {
+        setDescription("Check the GWT modules");
 
-		final CompilerOption options = extention.getCompile();
+        dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,
+            JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+    }
 
-		options.init(getProject());
+    public void configure(final Project project, final GwtExtension extention) {
 
-		JavaPluginConvention javaConvention =
-		    project.getConvention().getPlugin(JavaPluginConvention.class);
-		SourceSet            mainSourceSet  =
-		    javaConvention.getSourceSets()
-		                  .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-		final FileCollection sources        =
-		    getProject().files(project.files(mainSourceSet.getOutput()
-		                                     .getResourcesDir()))
-		                .plus(project.files(mainSourceSet.getOutput()
-		                                    .getClassesDirs()))
-		                .plus(getProject().files(mainSourceSet.getAllSource()
-		                                         .getSrcDirs()));
+        final CompilerOption options = extention.getCompile();
 
-		ConventionMapping mapping =
-		    ((IConventionAware) this).getConventionMapping();
+        options.init(getProject());
 
-		mapping.map("modules", new Callable<List<String>>() {
+        JavaPluginExtension javaExtension =
+            project.getExtensions().getByType(JavaPluginExtension.class);
+        SourceSet mainSourceSet = javaExtension
+            .getSourceSets()
+            .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        final FileCollection sources = getProject()
+            .files(project.files(mainSourceSet.getOutput().getResourcesDir()))
+            .plus(project.files(mainSourceSet.getOutput().getClassesDirs()))
+            .plus(
+                getProject().files(mainSourceSet.getAllSource().getSrcDirs()));
 
-		                @Override
-		                public List<String> call() {
+        ConventionMapping mapping =
+            ((IConventionAware) this).getConventionMapping();
 
-		                    return extention.getModule();
-		                }
-		            });
-		mapping.map("war", new Callable<File>() {
+        mapping.map("modules", new Callable<List<String>>() {
 
-		                @Override
-		                public File call() {
+            @Override
+            public List<String> call() {
 
-		                    return new File(getProject().getBuildDir(), "out");
-		                }
-		            });
-		mapping.map("src", new Callable<FileCollection>() {
+                return extention.getModule();
+            }
+        });
+        mapping.map("war", new Callable<File>() {
 
-		                @Override
-		                public FileCollection call() {
+            @Override
+            public File call() {
 
-		                    return sources;
-		                }
-		            });
-	}
+                return new File(getProject()
+                    .getLayout()
+                    .getBuildDirectory()
+                    .getAsFile()
+                    .get(), "out");
+            }
+        });
+        mapping.map("src", new Callable<FileCollection>() {
 
-	@TaskAction
-	public void exec() {
+            @Override
+            public FileCollection call() {
 
-		GwtExtension   extension       =
-		    getProject().getExtensions().getByType(GwtExtension.class);
-		CompilerOption compilerOptions = extension.getCompile();
+                return sources;
+            }
+        });
+    }
 
-		CompileCommand command =
-		    new CompileCommand(getProject(), compilerOptions, getSrc(), null,
-		                       getModules());
+    @TaskAction
+    public void exec() {
 
-		command.addArg("-validateOnly");
-		command.execute();
-	}
+        GwtExtension extension =
+            getProject().getExtensions().getByType(GwtExtension.class);
+        CompilerOption compilerOptions = extension.getCompile();
 
-	@Input
-	public List<String> getModules() {
+        CompileCommand command =
+            new CompileCommand(getProject(), getExecOperations(),
+                compilerOptions, getSrc(), null, getModules());
 
-		return modules;
-	}
+        command.addArg("-validateOnly");
+        command.execute();
+    }
 
-	@InputFiles
-	public FileCollection getSrc() {
+    @Input
+    public List<String> getModules() {
 
-		return src;
-	}
+        return modules;
+    }
 
-	@OutputDirectory
-	public File getWar() {
+    @InputFiles
+    @Classpath
+    public FileCollection getSrc() {
 
-		return war;
-	}
+        return src;
+    }
+
+    @OutputDirectory
+    public File getWar() {
+
+        return war;
+    }
 }
