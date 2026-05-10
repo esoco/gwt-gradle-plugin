@@ -7,7 +7,7 @@ Release notes
 
 * 1.3.0: Compatibility with Gradle versions 9.x
     * Minimum Gradle version 8.x
-    * Gradle 8.14.4 build
+    * Gradle 9.5.0 build
     * Minimum Java 17 for building
 
 ---------
