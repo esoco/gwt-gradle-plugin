@@ -21,6 +21,12 @@ dependencies {
     testImplementation 'org.spockframework:spock-core:2.4-groovy-5.0', gradleTestKit()
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-Xlint:deprecation']
 }
